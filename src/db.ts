@@ -1,6 +1,10 @@
 import postgres from 'postgres';
 
-import { type ITestRun } from './types';
+import {
+  type TTestSchema,
+  type ITestRun,
+} from './types';
+import CONF from './config';
 
 
 const sql = postgres(process.env.DATABASE_URL!, {
@@ -9,8 +13,47 @@ const sql = postgres(process.env.DATABASE_URL!, {
   connect_timeout: 10,
 });
 
-export const getTests = (runId: string) => sql<ITestRun[]>`
-    SELECT *
-    FROM ${sql('TestRun')}
-    WHERE id = ${runId}
-`;
+export const getTests = async (size: number): Promise<TTestSchema[]> => {
+  if (!CONF.currentRunId) {
+    return [];
+  }
+
+  let testConfigs: ITestRun[];
+
+  if (CONF.lastTestId) {
+    testConfigs = await sql<ITestRun[]>`
+      SELECT *
+      FROM ${sql('TestRun')}
+      WHERE id = ${CONF.currentRunId}
+      ORDER BY test_id
+      LIMIT ${size}
+    `;
+  } else {
+    testConfigs = await sql<ITestRun[]>`
+      SELECT *
+      FROM ${sql('TestRun')}
+      WHERE id = ${CONF.currentRunId}
+      ORDER BY test_id
+      LIMIT ${size}
+    `;
+  }
+
+  if (testConfigs.length === 0) {
+    return [];
+  }
+
+  CONF.lastTestId = testConfigs[testConfigs.length - 1].test_id;
+
+  const tests: TTestSchema[] = [];
+
+  for (const testConfig of testConfigs) {
+    const test = JSON.parse(testConfig.test_config) as TTestSchema;
+
+    test.test_id = testConfig.test_id;
+    test.run_id = testConfig.id;
+
+    tests.push(test)
+  }
+
+  return tests;
+}

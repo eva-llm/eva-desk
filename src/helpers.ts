@@ -26,3 +26,8 @@ export const splitAndSortSlots = (slots: Record<string, number>): [ string[], nu
     sortedIndices.map((index) => sizes[index]),
   ];
 }
+
+export const switchRunId = () => {
+  CONF.currentRunId = CONF.runIdsQueue.shift() ?? null;
+  CONF.lastTestId = null;
+}

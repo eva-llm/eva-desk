@@ -51,7 +51,7 @@ export const markTestDone = (nodeId: string, testId: string) => {
 }
 
 export const getNextDoneTest = async (): Promise<[string | null, string | null]> => {
-  const result = await redis.brpop(QUEUE_TEST_DONE, CONF.discoveryInterval / 1000);
+  const result = await redis.brpop(QUEUE_TEST_DONE, CONF.tickInterval / 1000);
 
   if (!result) {
     return [null, null];
@@ -63,7 +63,7 @@ export const getNextDoneTest = async (): Promise<[string | null, string | null]>
 }
 
 export const cleanOldNodes = (): Promise<number> => {
-  return redis.zremrangebyscore(QUEUE_NODE_PING, 0, Date.now() - CONF.discoveryInterval * 3);
+  return redis.zremrangebyscore(QUEUE_NODE_PING, 0, Date.now() - CONF.tickInterval * 3);
 }
 
 export const getActiveNodes = (): Promise<string[]> => {

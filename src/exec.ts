@@ -1,25 +1,31 @@
 import { sprayTests } from './cluster';
+import { getNodesLoad } from './redis';
+import {
+  getSlots,
+  switchRunId,
+} from './helpers';
 import CONF from './config';
+import { getTests } from './db';
 
 
 export default () => {
-  setInterval(() => {
+  setInterval(async () => {
     if (!CONF.currentRunId) {
       return;
     }
 
-    const nodesLoad = redis.getNodesLoad();
-    const size = Object.keys(nodesLoad).length;
+    const nodesLoad = await getNodesLoad();
 
-    if (size === 0) {
+    if (Object.keys(nodesLoad).length === 0) {
       return;
     }
 
     const slots = getSlots(nodesLoad);
-    const tests = db.getTests(size);
+    const size = Object.values(slots).reduce((sum, el) => sum + el, 0);
+    const tests = await getTests(size);
 
     if (tests.length < size) {
-      redis.finishRun();
+      switchRunId();
     }
 
     if (tests.length === 0) {
@@ -27,5 +33,5 @@ export default () => {
     }
 
     sprayTests(tests, slots);
-  }, CONF.discoveryInterval);
+  }, CONF.tickInterval);
 }

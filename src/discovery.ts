@@ -7,5 +7,5 @@ import {
 export default () => {
   setInterval(
     () => cleanOldNodes().then(getActiveNodes).then(nodes => CONF.nodes = nodes),
-    CONF.discoveryInterval);
+    CONF.tickInterval);
 }
