@@ -13,6 +13,22 @@ const redis = new Redis(process.env.CLUSTER_REDIS_URL!, {
 
 export default redis;
 
+export const getStuckTests = async (): Promise<string[]> => {
+  const registedNodeIds = new Set(await redis.scan(0, 'MATCH', `${QUEUE_TEST_RUNNING}:*`));
+
+  const diedNodeIds = registedNodeIds.difference(new Set(CONF.nodes));
+
+  const testIds: string[] = [];
+
+  for (const nodeId of diedNodeIds) {
+    const nodeTestIds = await redis.smembers(`${QUEUE_TEST_RUNNING}:${nodeId}`);
+
+    testIds.push(...nodeTestIds);
+  }
+
+  return testIds;
+}
+
 export const getNodesLoad = async (): Promise<Record<string, number>> => {
   const nodesLoad: Record<string, number> = {};
   const pipeline = redis.pipeline();

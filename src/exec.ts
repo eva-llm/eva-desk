@@ -5,7 +5,7 @@ import {
   switchRunId,
 } from './helpers';
 import CONF from './config';
-import { getTests } from './db';
+import { getNextTests } from './db';
 
 
 export default () => {
@@ -22,7 +22,7 @@ export default () => {
 
     const slots = getSlots(nodesLoad);
     const size = Object.values(slots).reduce((sum, el) => sum + el, 0);
-    const tests = await getTests(size);
+    const tests = await getNextTests(size);
 
     if (tests.length < size) {
       switchRunId();

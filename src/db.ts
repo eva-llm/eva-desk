@@ -13,7 +13,7 @@ const sql = postgres(process.env.DATABASE_URL!, {
   connect_timeout: 10,
 });
 
-export const getTests = async (size: number): Promise<TTestSchema[]> => {
+export const getNextTests = async (size: number): Promise<TTestSchema[]> => {
   if (!CONF.currentRunId) {
     return [];
   }
@@ -43,6 +43,33 @@ export const getTests = async (size: number): Promise<TTestSchema[]> => {
   }
 
   CONF.lastTestId = testConfigs[testConfigs.length - 1].test_id;
+
+  const tests: TTestSchema[] = [];
+
+  for (const testConfig of testConfigs) {
+    const test = JSON.parse(testConfig.test_config) as TTestSchema;
+
+    test.test_id = testConfig.test_id;
+    test.run_id = testConfig.id;
+
+    tests.push(test)
+  }
+
+  return tests;
+}
+
+export const getTestsByIds = async (testIds: string[]): Promise<TTestSchema[]> => {
+  let testConfigs: ITestRun[];
+
+  testConfigs = await sql<ITestRun[]>`
+    SELECT *
+    FROM ${sql('TestRun')}
+    WHERE test_id IN ${sql(testIds)}
+  `;
+
+  if (testConfigs.length === 0) {
+    return [];
+  }
 
   const tests: TTestSchema[] = [];
 

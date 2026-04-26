@@ -5,6 +5,7 @@ import discoveryNodes from './discovery';
 import updateDoneTests from './testing';
 import assignTestsToNodes from './exec';
 import registerHandlers from './handlers';
+import reRunTestsOfDiedNodes from './rerun';
 
 
 const fastify = Fastify({
@@ -27,6 +28,7 @@ const start = async () => {
     discoveryNodes();
     updateDoneTests();
     assignTestsToNodes();
+    reRunTestsOfDiedNodes();
 
     const address = await fastify.listen({ 
       port: CONF.port,
