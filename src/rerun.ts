@@ -4,26 +4,31 @@ import {
 } from './redis';
 import CONF from './config';
 import { getTestsByIds } from './db';
-import { getSlots } from './helpers';
+import {
+  getSlots,
+  sleep,
+} from './helpers';
 import { sprayTests } from './cluster';
 
-export default () => {
-  setInterval(async () => {
+export default async () => {
+  while (true) {
+    await sleep(CONF.tickInterval)
+
     const stuckTestIds = await getStuckTests();
 
     if (stuckTestIds.length === 0) {
-      return;
+      continue;
     }
 
     const nodesLoad = await getNodesLoad();
     
     if (Object.keys(nodesLoad).length === 0) {
-      return;
+      continue;
     }
 
     const slots = getSlots(nodesLoad);
     const stuckTests = await getTestsByIds(stuckTestIds);
 
-    sprayTests(stuckTests, slots);
-  }, CONF.tickInterval);
+    await sprayTests(stuckTests, slots);
+  };
 };

@@ -2,22 +2,25 @@ import { sprayTests } from './cluster';
 import { getNodesLoad } from './redis';
 import {
   getSlots,
+  sleep,
   switchRunId,
 } from './helpers';
 import CONF from './config';
 import { getNextTests } from './db';
 
 
-export default () => {
-  setInterval(async () => {
+export default async () => {
+  while (true) {
+    await sleep(CONF.tickInterval);
+
     if (!CONF.currentRunId) {
-      return;
+      continue;
     }
 
     const nodesLoad = await getNodesLoad();
 
     if (Object.keys(nodesLoad).length === 0) {
-      return;
+      continue;
     }
 
     const slots = getSlots(nodesLoad);
@@ -29,9 +32,9 @@ export default () => {
     }
 
     if (tests.length === 0) {
-      return;
+      continue;
     }
 
-    sprayTests(tests, slots);
-  }, CONF.tickInterval);
+    await sprayTests(tests, slots);
+  };
 }

@@ -73,7 +73,7 @@ export const markTestsDone = (doneTests: Record<string, string[]>) => {
 }
 
 export const getDoneTests = async (): Promise<Record<string, string[]> | null> => {
-  const result = await redis.brpop(QUEUE_TEST_DONE, CONF.tickInterval / 1000);
+  const result = await redis.brpop(QUEUE_TEST_DONE, CONF.tickInterval);
 
   if (!result) {
     return null;
@@ -104,7 +104,7 @@ export const getDoneTests = async (): Promise<Record<string, string[]> | null> =
 }
 
 export const cleanOldNodes = (): Promise<number> => {
-  return redis.zremrangebyscore(QUEUE_NODE_PING, 0, Date.now() - CONF.tickInterval * 3);
+  return redis.zremrangebyscore(QUEUE_NODE_PING, 0, Date.now() - CONF.tickInterval * 3 * 1000);
 }
 
 export const getActiveNodes = (): Promise<string[]> => {

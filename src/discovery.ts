@@ -1,11 +1,17 @@
+import { sleep } from './helpers';
 import CONF from './config';
 import {
   cleanOldNodes,
   getActiveNodes,
 } from './redis';
 
-export default () => {
-  setInterval(
-    () => cleanOldNodes().then(getActiveNodes).then(nodes => CONF.nodes = nodes),
-    CONF.tickInterval);
+export default async () => {
+  while (true) {
+    await sleep(CONF.tickInterval);
+    await cleanOldNodes();
+
+    const nodes = await getActiveNodes();
+
+    CONF.nodes = nodes;
+  }
 }

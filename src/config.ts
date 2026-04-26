@@ -1,6 +1,6 @@
 export default {
   port: Number(process.env.PORT || 3000),
-  tickInterval: 10 * 1000,
+  tickInterval: 10, // in seconds
   maxNodeLoad: Number(process.env.MAX_TESTS_IN_NODE || 1000),
   nodes: [] as string[],
   currentRunId: null as string | null, // NOTE: need to keep in redis also to provide persistence across restarts

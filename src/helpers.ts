@@ -31,3 +31,5 @@ export const switchRunId = () => {
   CONF.currentRunId = CONF.runIdsQueue.shift() ?? null;
   CONF.lastTestId = null;
 }
+
+export const sleep = (sec: number) => new Promise((resolve) => setTimeout(resolve, sec * 1000));
