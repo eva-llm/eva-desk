@@ -107,7 +107,7 @@ export const NodesResponse = Type.Object({
 export type TNodesResponse = Static<typeof NodesResponse>;
 
 export interface ITestRun {
-  id: string;
+  run_id: string;
   test_id: string;
   test_config: string;
 }

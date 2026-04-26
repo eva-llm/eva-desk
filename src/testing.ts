@@ -1,16 +1,16 @@
 import {
-  getNextDoneTest,
-  markTestDone,
+  getDoneTests,
+  markTestsDone,
 } from './redis';
 
 export default async () => {
   while (true) {
-    const [nodeHost, testId] = await getNextDoneTest();
+    const doneTests = await getDoneTests();
 
-    if (!testId || !nodeHost) {
+    if (!doneTests) {
       continue;
     }
 
-    markTestDone(nodeHost, testId);
+    await markTestsDone(doneTests);
   }
 }

@@ -62,20 +62,45 @@ export const setRunningTests = (nodeId: string, testIds: string[]) => {
   return redis.sadd(`${QUEUE_TEST_RUNNING}:${nodeId}`, ...testIds);
 }
 
-export const markTestDone = (nodeId: string, testId: string) => {
-  return redis.sadd(`${QUEUE_TEST_RUNNING}:${nodeId}`, testId);
+export const markTestsDone = (doneTests: Record<string, string[]>) => {
+  const pipeline = redis.pipeline();
+
+  for (const [ nodeId, testIds ] of Object.entries(doneTests)) {
+    pipeline.srem(`${QUEUE_TEST_RUNNING}:${nodeId}`, ...testIds);
+  }
+
+  return pipeline.exec();
 }
 
-export const getNextDoneTest = async (): Promise<[string | null, string | null]> => {
+export const getDoneTests = async (): Promise<Record<string, string[]> | null> => {
   const result = await redis.brpop(QUEUE_TEST_DONE, CONF.tickInterval / 1000);
 
   if (!result) {
-    return [null, null];
+    return null;
   }
 
   const [ , testData ] = result;
+  const testsInfo = [testData];
 
-  return testData.split('|') as [string, string]; // [host, testId]
+  const otherTestData = await redis.rpop(QUEUE_TEST_DONE, CONF.maxNodeLoad);
+
+  if (otherTestData?.length) {
+    testsInfo.push(...otherTestData);
+  }
+
+  const doneTests: Record<string, string[]> = {};
+
+  for (const testInfo of testsInfo) {
+    const [host, testId] = testInfo.split('|') as [string, string];
+
+    if (!doneTests[host]) {
+      doneTests[host] = [];
+    }
+
+    doneTests[host].push(testId);
+  }
+
+  return doneTests;
 }
 
 export const cleanOldNodes = (): Promise<number> => {

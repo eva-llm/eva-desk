@@ -24,7 +24,7 @@ export const getNextTests = async (size: number): Promise<TTestSchema[]> => {
     testConfigs = await sql<ITestRun[]>`
       SELECT *
       FROM ${sql('TestRun')}
-      WHERE id = ${CONF.currentRunId}
+      WHERE run_id = ${CONF.currentRunId}
       ORDER BY test_id
       LIMIT ${size}
     `;
@@ -32,7 +32,7 @@ export const getNextTests = async (size: number): Promise<TTestSchema[]> => {
     testConfigs = await sql<ITestRun[]>`
       SELECT *
       FROM ${sql('TestRun')}
-      WHERE id = ${CONF.currentRunId}
+      WHERE run_id = ${CONF.currentRunId}
       ORDER BY test_id
       LIMIT ${size}
     `;
@@ -50,7 +50,7 @@ export const getNextTests = async (size: number): Promise<TTestSchema[]> => {
     const test = JSON.parse(testConfig.test_config) as TTestSchema;
 
     test.test_id = testConfig.test_id;
-    test.run_id = testConfig.id;
+    test.run_id = testConfig.run_id;
 
     tests.push(test)
   }
@@ -77,7 +77,7 @@ export const getTestsByIds = async (testIds: string[]): Promise<TTestSchema[]> =
     const test = JSON.parse(testConfig.test_config) as TTestSchema;
 
     test.test_id = testConfig.test_id;
-    test.run_id = testConfig.id;
+    test.run_id = testConfig.run_id;
 
     tests.push(test)
   }
