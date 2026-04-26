@@ -1,6 +1,7 @@
 export default {
-  discoveryInterval: 10 * 1000,
   port: Number(process.env.PORT || 3000),
+  discoveryInterval: 10 * 1000,
+  maxNodeLoad: Number(process.env.MAX_TESTS_IN_NODE || 1000),
   nodes: [] as string[],
   currentRunId: null as string | null,
   runIdsQueue: [] as string[],

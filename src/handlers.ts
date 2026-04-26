@@ -1,3 +1,4 @@
+import createError from 'http-errors';
 import {
   type FastifyInstance,
   type FastifyRequest,
@@ -5,7 +6,9 @@ import {
 import { uuidv7 } from 'uuidv7';
 
 import CONF from './config';
-import { spreadTests } from './cluster';
+import { sprayTests } from './cluster';
+import { getSlots } from './helpers';
+import { getNodesLoad } from './redis';
 
 import {
   CurrentRunResponse,
@@ -41,10 +44,12 @@ export default (fastify: FastifyInstance) => {
       request: FastifyRequest<{ Body: TTestSchema[] }>,
     ): Promise<TEvalResponse> => {
 
-      const nodesLoad = redis.getNodesLoad();
+      if (CONF.currentRunId) {
+        throw createError(400, 'Cluster is busy');
+      }
 
-      if (Object.keys(nodesLoad).length === 0) {
-        return { test_ids: testIds };
+      if (CONF.nodes.length === 0) {
+        throw createError(400, 'No nodes to run tests');
       }
 
       const testConfigs = request.body;
@@ -57,7 +62,9 @@ export default (fastify: FastifyInstance) => {
         testIds.push(testId);
       }
 
-      spreadTests(testConfigs, getSlots(nodesLoad));
+      const nodesLoad = await getNodesLoad();
+
+      sprayTests(testConfigs, getSlots(nodesLoad)); // NOTE: Don't wait for tests to finish, just spray them
 
       return { test_ids: testIds };
     }

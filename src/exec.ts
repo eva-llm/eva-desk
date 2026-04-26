@@ -1,4 +1,4 @@
-import { spreadTests } from './cluster';
+import { sprayTests } from './cluster';
 import CONF from './config';
 
 
@@ -26,6 +26,6 @@ export default () => {
       return;
     }
 
-    spreadTests(tests, slots);
+    sprayTests(tests, slots);
   }, CONF.discoveryInterval);
 }

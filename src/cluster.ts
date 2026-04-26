@@ -1,18 +1,29 @@
-import { parsePromptfoo } from '@eva-llm/eva-parser';
+import { splitAndSortSlots } from './helpers';
+import { setRunningTests } from './redis';
+import { sendRequest } from './request';
+import { type TTestSchema } from './types';
 
 
-export const spreadTests = (tests: string[], slots: string[]) => {
-    const [ hosts, sizes ] = splitAndSortSlots(slots);
+export const sprayTests = (
+  tests: TTestSchema[],
+  slots: Record<string, number>,
+) => {
+  const [ hosts, sizes ] = splitAndSortSlots(slots);
+  const promises = [];
 
-    for (let i = 0; i < tests.length; i++) {
-        const host = hosts[i % hosts.length];
-        const size = sizes[i % sizes.length];
+  let offset = 0;
+  for (let i = 0; i < hosts.length; i++) {
 
-        const testsBatch = tests.splice(0, hosts.length * sizes.length);
+    const host = hosts[i];
+    const size = sizes[i];
 
+    const testsBatch = tests.slice(offset, offset + size);
+    const promiseFunc = (host: string, testsBatch: TTestSchema[]) => sendRequest(host, testsBatch)
+      .then(testIds => setRunningTests(host, testIds));
 
-        const testIds = sendRequest(testBatch);
+    promises.push(promiseFunc(host, testsBatch));
+    offset += size;
+  }
 
-        redis.setRunningTests(host, testIds);
-    }
+  return Promise.all(promises);
 };
