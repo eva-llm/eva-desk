@@ -8,7 +8,7 @@ import { uuidv7 } from 'uuidv7';
 import CONF from './config';
 import { sprayTests } from './cluster';
 import { getSlots } from './helpers';
-import { getActiveNodesLoad } from './redis';
+import { getNodesLoad } from './redis';
 
 import {
   CurrentRunResponse,
@@ -62,7 +62,7 @@ export default (fastify: FastifyInstance) => {
         testIds.push(testId);
       }
 
-      const nodesLoad = await getActiveNodesLoad();
+      const nodesLoad = await getNodesLoad();
 
       sprayTests(testConfigs, getSlots(nodesLoad)); // NOTE: Don't wait for tests to finish, just spray them
 
