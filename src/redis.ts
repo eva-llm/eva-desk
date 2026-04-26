@@ -1,7 +1,10 @@
 import Redis from 'ioredis';
 
 import CONF from './config';
-import { QUEUE_TEST_RUNNING } from './constants';
+import {
+  QUEUE_TEST_DONE,
+  QUEUE_TEST_RUNNING,
+} from './constants';
 
 const redis = new Redis(process.env.CLUSTER_REDIS_URL!, {
   retryStrategy: (times) => Math.min(times * 50, 2000),
@@ -40,4 +43,20 @@ export const setRunningTests = (nodeId: string, testIds: string[]) => {
   }
 
   return redis.sadd(`${QUEUE_TEST_RUNNING}:${nodeId}`, ...testIds);
+}
+
+export const markTestDone = (nodeId: string, testId: string) => {
+  return redis.sadd(`${QUEUE_TEST_RUNNING}:${nodeId}`, testId);
+}
+
+export const getNextDoneTest = async (): Promise<[string | null, string | null]> => {
+  const result = await redis.brpop(QUEUE_TEST_DONE, CONF.discoveryInterval / 1000);
+
+  if (!result) {
+    return [null, null];
+  }
+
+  const [ , testData ] = result;
+
+  return testData.split('|') as [string, string]; // [host, testId]
 }

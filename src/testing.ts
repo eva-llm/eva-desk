@@ -1,14 +1,16 @@
-import { QUEUE_TEST_DONE, QUEUE_TEST_RUNNING } from './constants';
-import redis from './redis';
+import {
+  getNextDoneTest,
+  markTestDone,
+} from './redis';
 
 export default async () => {
   while (true) {
-    const [nodeHost, testId] = redis.getNextDoneTest();
+    const [nodeHost, testId] = await getNextDoneTest();
 
-    if (!testId) {
+    if (!testId || !nodeHost) {
       continue;
     }
 
-    redis.markTestsDone(nodeHost, testId);
+    markTestDone(nodeHost, testId);
   }
 }
