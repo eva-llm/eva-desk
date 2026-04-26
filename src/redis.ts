@@ -3,6 +3,7 @@ import Redis from 'ioredis';
 import CONF from './config';
 import {
   QUEUE_TEST_DONE,
+  QUEUE_NODE_PING,
   QUEUE_TEST_RUNNING,
 } from './constants';
 
@@ -59,4 +60,12 @@ export const getNextDoneTest = async (): Promise<[string | null, string | null]>
   const [ , testData ] = result;
 
   return testData.split('|') as [string, string]; // [host, testId]
+}
+
+export const cleanOldNodes = (): Promise<number> => {
+  return redis.zremrangebyscore(QUEUE_NODE_PING, 0, Date.now() - CONF.discoveryInterval * 3);
+}
+
+export const getActiveNodes = (): Promise<string[]> => {
+  return redis.zrange(QUEUE_NODE_PING, 0, -1);
 }
