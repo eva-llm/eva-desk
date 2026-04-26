@@ -13,18 +13,8 @@ export const getSlots = (
   return slots;
 }
 
-export const splitAndSortSlots = (slots: Record<string, number>): [ string[], number[] ] => {
-  const hosts = Object.keys(slots);
-  const sizes = Object.values(slots);
-
-  const sortedIndices = hosts
-    .map((_, index) => index)
-    .sort((a, b) => sizes[b] - sizes[a]);
-
-  return [
-    sortedIndices.map((index) => hosts[index]),
-    sortedIndices.map((index) => sizes[index]),
-  ];
+export const splitAndSortSlots = (slots: Record<string, number>): [string, number][] => {
+  return Object.entries(slots).sort((a, b) => b[1] - a[1]);
 }
 
 export const switchRunId = () => {

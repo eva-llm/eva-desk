@@ -9,16 +9,13 @@ import {
   sleep,
 } from './helpers';
 import { sprayTests } from './cluster';
+import { type TTestSchema } from 'types';
 
 export default async () => {
+  let stuckTests: TTestSchema[] = []; // NOTE: maybe better to keep in redis
+
   while (true) {
     await sleep(CONF.tickInterval)
-
-    const stuckTestIds = await getStuckTests();
-
-    if (stuckTestIds.length === 0) {
-      continue;
-    }
 
     const nodesLoad = await getNodesLoad();
     
@@ -27,8 +24,17 @@ export default async () => {
     }
 
     const slots = getSlots(nodesLoad);
-    const stuckTests = await getTestsByIds(stuckTestIds);
 
-    await sprayTests(stuckTests, slots);
+    if (stuckTests.length === 0) {
+      const stuckTestIds = await getStuckTests();
+
+      if (stuckTestIds.length === 0) {
+        continue;
+      }
+
+      stuckTests = await getTestsByIds(stuckTestIds);
+    }
+
+    [, stuckTests] = await sprayTests(stuckTests, slots);
   };
 };

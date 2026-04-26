@@ -6,6 +6,7 @@ import {
 } from './types';
 import CONF from './config';
 
+const UUID_MIN = '00000000-0000-0000-0000-000000000000';
 
 const sql = postgres(process.env.DATABASE_URL!, {
   max: 10, 
@@ -20,29 +21,18 @@ export const getNextTests = async (size: number): Promise<TTestSchema[]> => {
 
   let testConfigs: ITestRun[];
 
-  if (CONF.lastTestId) {
-    testConfigs = await sql<ITestRun[]>`
-      SELECT *
-      FROM ${sql('TestRun')}
-      WHERE run_id = ${CONF.currentRunId}
-      ORDER BY test_id
-      LIMIT ${size}
-    `;
-  } else {
-    testConfigs = await sql<ITestRun[]>`
-      SELECT *
-      FROM ${sql('TestRun')}
-      WHERE run_id = ${CONF.currentRunId}
-      ORDER BY test_id
-      LIMIT ${size}
-    `;
-  }
+  testConfigs = await sql<ITestRun[]>`
+    SELECT *
+    FROM ${sql('TestRun')}
+    WHERE run_id = ${CONF.currentRunId}
+    AND test_id > ${CONF.lastTestId || UUID_MIN}
+    ORDER BY test_id
+    LIMIT ${size}
+  `;
 
   if (testConfigs.length === 0) {
     return [];
   }
-
-  CONF.lastTestId = testConfigs[testConfigs.length - 1].test_id;
 
   const tests: TTestSchema[] = [];
 

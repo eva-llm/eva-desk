@@ -25,16 +25,19 @@ export default async () => {
 
     const slots = getSlots(nodesLoad);
     const size = Object.values(slots).reduce((sum, el) => sum + el, 0);
+
+    if (size < CONF.maxNodeLoad / 2) {
+      continue; // NOTE: don't deal with trifles
+    }
+
     const tests = await getNextTests(size);
 
-    if (tests.length < size) {
+    const [lastTestId, notRunTests] = await sprayTests(tests, slots);
+
+    if ((tests.length < size) && (notRunTests.length === 0)) {
       switchRunId();
+    } else {
+      CONF.lastTestId = lastTestId;
     }
-
-    if (tests.length === 0) {
-      continue;
-    }
-
-    await sprayTests(tests, slots);
   };
 }

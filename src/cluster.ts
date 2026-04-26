@@ -4,26 +4,44 @@ import { sendRequest } from './request';
 import { type TTestSchema } from './types';
 
 
-export const sprayTests = (
+export const sprayTests = async (
   tests: TTestSchema[],
   slots: Record<string, number>,
-) => {
-  const [ hosts, sizes ] = splitAndSortSlots(slots);
-  const promises = [];
+): Promise<[string | null, TTestSchema[]]> => {
+  let lastTestId: string | null = null;
 
-  let offset = 0;
-  for (let i = 0; i < hosts.length; i++) {
-
-    const host = hosts[i];
-    const size = sizes[i];
-
-    const testsBatch = tests.slice(offset, offset + size);
-    const promiseFunc = (host: string, testsBatch: TTestSchema[]) => sendRequest(host, testsBatch)
-      .then(testIds => setRunningTests(host, testIds));
-
-    promises.push(promiseFunc(host, testsBatch));
-    offset += size;
+  if (tests.length === 0) {
+    return [lastTestId, tests];
   }
 
-  return Promise.all(promises);
+  const queue = [...tests];
+
+  const hostSizes = splitAndSortSlots(slots);
+
+  let i = 0;
+  while (queue.length > 0 && hostSizes.length > 0) {
+    const idx = i % hostSizes.length;
+    const [ host, size ] = hostSizes[idx];
+
+    if (size === 0) {
+      hostSizes.splice(idx, 1);
+      continue;
+    }
+
+    const testsBatch = queue.splice(0, size);
+
+    try {
+      const startedIds = await sendRequest(host, testsBatch); // NOTE: one-by-one - eva-run is extra fast "fire & forget"
+
+      await setRunningTests(host, startedIds); // NOTE: maybe need more logic in order to avoid duplications on error here
+
+      lastTestId = testsBatch[testsBatch.length - 1].test_id!;
+      i++
+    } catch {
+      queue.unshift(...testsBatch);
+      hostSizes.splice(idx, 1);
+    }
+  }
+
+  return [lastTestId, queue];
 };
