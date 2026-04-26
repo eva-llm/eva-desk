@@ -1,8 +1,30 @@
-import { FastifyInstance } from 'fastify';
+import {
+  type FastifyInstance,
+  type FastifyRequest,
+} from 'fastify';
 import { uuidv7 } from 'uuidv7';
 
 import CONF from './config';
 import { spreadTests } from './cluster';
+
+import {
+  CurrentRunResponse,
+  EvalResponse,
+  HealthResponse,
+  NodesResponse,
+  TestSchema,
+  RunsQueueResponse,
+  RunRequest,
+  RunResponse,
+  type THealthResponse,
+  type TEvalResponse,
+  type TTestSchema,
+  type TRunRequest,
+  type TRunResponse,
+  type TCurrentRunResponse,
+  type TRunsQueueResponse,
+  type TNodesResponse,
+} from './types';
 
 export default (fastify: FastifyInstance) => {
   fastify.post('/eval', {
@@ -15,7 +37,16 @@ export default (fastify: FastifyInstance) => {
         200: EvalResponse,
       },
     },
-    handler: async (request: FastifyRequest<{ Body: TTestSchema[] }>): Promise<TEvalResponse> => {
+    handler: async (
+      request: FastifyRequest<{ Body: TTestSchema[] }>,
+    ): Promise<TEvalResponse> => {
+
+      const nodesLoad = redis.getNodesLoad();
+
+      if (Object.keys(nodesLoad).length === 0) {
+        return { test_ids: testIds };
+      }
+
       const testConfigs = request.body;
       const testIds: string[] = [];
 
@@ -26,7 +57,7 @@ export default (fastify: FastifyInstance) => {
         testIds.push(testId);
       }
 
-      spreadTests(testConfigs, );
+      spreadTests(testConfigs, getSlots(nodesLoad));
 
       return { test_ids: testIds };
     }
@@ -35,40 +66,32 @@ export default (fastify: FastifyInstance) => {
   fastify.get('/health', {
     schema: {
       response: {
-        200: {
-          type: 'object',
-          properties: {
-            status: { type: 'string' },
-          },
-        },
+        200: HealthResponse,
       },
     },
-    handler: async () => ({ status: 'ok' }),
+    handler: async (): Promise<THealthResponse> => ({ status: 'ok' }),
   });
 
   fastify.post('/run', {
     schema: {
+      body: RunRequest,
       response: {
-        200: {
-          type: 'object',
-          properties: {
-            status: { type: 'string' },
-            run_id: { type: 'string' },
-          },
-        },
+        200: RunResponse,
       },
     },
-    handler: async (request, reply) => {
+    handler: async (
+      request: FastifyRequest<{ Body: TRunRequest }>,
+    ): Promise<TRunResponse> => {
       const { run_id: runId } = request.body;
 
       if (CONF.currentRunId) {
         CONF.runIdsQueue.push(runId);
 
-        return { status: 'queued', runId };
+        return { status: 'queued', run_id: runId };
       } else {
         CONF.currentRunId = runId;
 
-        return { status: 'run', runId };
+        return { status: 'run', run_id: runId };
       }
     }
   });
@@ -76,48 +99,27 @@ export default (fastify: FastifyInstance) => {
   fastify.get('/current_run', {
     schema: {
       response: {
-        200: {
-          type: 'object',
-          properties: {
-            current_run: { type: 'string' },
-          },
-        },
+        200: CurrentRunResponse,
       },
     },
-    handler: async () => ({ current_run: CONF.currentRunId }),
+    handler: async (): Promise<TCurrentRunResponse> => ({ run_id: CONF.currentRunId }),
   });
 
   fastify.get('/runs_queue', {
     schema: {
       response: {
-        200: {
-          type: 'object',
-          properties: {
-            runs_queue: {
-              type: 'array',
-              items: { type: 'string' },
-            },
-          },
-        },
+        200: RunsQueueResponse,
       },
     },
-    handler: async () => ({ runs_queue: CONF.runIdsQueue }),
+    handler: async (): Promise<TRunsQueueResponse> => ({ run_ids: CONF.runIdsQueue }),
   });
 
   fastify.get('/nodes', {
     schema: {
       response: {
-        200: {
-          type: 'object',
-          properties: {
-            nodes: {
-              type: 'array',
-              items: { type: 'string' },
-            },
-          },
-        },
+        200: NodesResponse,
       },
     },
-    handler: async () => ({ nodes: CONF.nodes }),
-  })
+    handler: async (): Promise<TNodesResponse> => ({ nodes: CONF.nodes }),
+  });
 }
