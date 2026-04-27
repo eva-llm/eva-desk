@@ -1,6 +1,6 @@
-import createError from 'http-errors';
 import {
   type FastifyInstance,
+  type FastifyReply,
   type FastifyRequest,
 } from 'fastify';
 import { uuidv7 } from 'uuidv7';
@@ -42,14 +42,15 @@ export default (fastify: FastifyInstance) => {
     },
     handler: async (
       request: FastifyRequest<{ Body: TTestSchema[] }>,
-    ): Promise<TEvalResponse> => {
+      reply: FastifyReply,
+    ) => {
 
       if (CONF.currentRunId) {
-        throw createError(400, 'Cluster is busy');
+        return reply.code(400).send({ message: 'Cluster is busy' });
       }
 
       if (CONF.nodes.length === 0) {
-        throw createError(400, 'No nodes to run tests');
+        return reply.code(400).send({ message: 'No nodes to run tests' });
       }
 
       const testConfigs = request.body;
