@@ -11,7 +11,7 @@ git clone https://github.com/eva-llm/eva-desk
 cd eva-desk
 nvm use
 pnpm install
-export REDIS_URL="redis://..."
+export CLUSTER_REDIS_URL="redis://..."
 export DATABASE_URL="postgresql://..."
 pnpm run server
 ```
