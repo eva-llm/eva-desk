@@ -1,5 +1,3 @@
-# eva-desk
-
 Lightweight, high-performance orchestration engine designed to manage `eva-run` clusters.
 
 It acts as a centralized control plane and test load balancer, utilizing a `Redis`-based message bus to ensure seamless task distribution and fault tolerance.

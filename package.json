@@ -1,7 +1,7 @@
 {
   "name": "@eva-llm/eva-desk",
   "version": "1.0.0",
-  "description": "eva-desk nodes cluster management",
+  "description": "Cluster manager and test balancer for eva-run nodes",
   "main": "dst/server.js",
   "types": "dst/server.d.ts",
   "engines": {
@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "prepare": "prisma generate && pnpm run build",
+    "prepare": "pnpm run build",
     "server": "node dst/server.js",
     "test": "jest",
     "test:coverage": "jest --coverage"
