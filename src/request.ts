@@ -3,7 +3,7 @@ import { request } from 'undici';
 import { type TTestSchema } from './types';
 
 
-export const sendRequest = async (
+export const evalRequest = async (
   host: string,
   tests: TTestSchema[],
 ): Promise<string[]> => {

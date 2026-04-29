@@ -1,8 +1,8 @@
-const mockSendRequest = jest.fn();
+const mockEvalRequest = jest.fn();
 const mockSetRunningTests = jest.fn();
 
 jest.mock('../src/request', () => ({
-  sendRequest: mockSendRequest,
+  evalRequest: mockEvalRequest,
 }));
 
 jest.mock('../src/redis', () => ({
@@ -38,18 +38,18 @@ describe('sprayTests', () => {
 
     expect(lastTestId).toBeNull();
     expect(remaining).toEqual([]);
-    expect(mockSendRequest).not.toHaveBeenCalled();
+    expect(mockEvalRequest).not.toHaveBeenCalled();
     expect(mockSetRunningTests).not.toHaveBeenCalled();
   });
 
   it('should send all tests to a single host and return the last test_id', async () => {
-    mockSendRequest.mockResolvedValue([TEST_1.test_id, TEST_2.test_id]);
+    mockEvalRequest.mockResolvedValue([TEST_1.test_id, TEST_2.test_id]);
     mockSetRunningTests.mockResolvedValue(2);
 
     const [lastTestId, remaining] = await sprayTests([TEST_1, TEST_2], { [HOST_A]: 3 });
 
-    expect(mockSendRequest).toHaveBeenCalledTimes(1);
-    expect(mockSendRequest).toHaveBeenCalledWith(HOST_A, [TEST_1, TEST_2]);
+    expect(mockEvalRequest).toHaveBeenCalledTimes(1);
+    expect(mockEvalRequest).toHaveBeenCalledWith(HOST_A, [TEST_1, TEST_2]);
     expect(mockSetRunningTests).toHaveBeenCalledWith(HOST_A, [TEST_1.test_id, TEST_2.test_id]);
     expect(lastTestId).toBe(TEST_2.test_id);
     expect(remaining).toEqual([]);
@@ -57,7 +57,7 @@ describe('sprayTests', () => {
 
   it('should distribute tests across multiple hosts using slot sizes', async () => {
     // HOST_A has 3 slots, HOST_B has 1 slot — splitAndSortSlots sorts descending
-    mockSendRequest
+    mockEvalRequest
       .mockResolvedValueOnce([TEST_1.test_id, TEST_2.test_id, TEST_3.test_id])
       .mockResolvedValueOnce([TEST_4.test_id]);
     mockSetRunningTests.mockResolvedValue(null);
@@ -67,15 +67,15 @@ describe('sprayTests', () => {
       { [HOST_A]: 3, [HOST_B]: 1 },
     );
 
-    expect(mockSendRequest).toHaveBeenCalledTimes(2);
-    expect(mockSendRequest).toHaveBeenNthCalledWith(1, HOST_A, [TEST_1, TEST_2, TEST_3]);
-    expect(mockSendRequest).toHaveBeenNthCalledWith(2, HOST_B, [TEST_4]);
+    expect(mockEvalRequest).toHaveBeenCalledTimes(2);
+    expect(mockEvalRequest).toHaveBeenNthCalledWith(1, HOST_A, [TEST_1, TEST_2, TEST_3]);
+    expect(mockEvalRequest).toHaveBeenNthCalledWith(2, HOST_B, [TEST_4]);
     expect(lastTestId).toBe(TEST_4.test_id);
     expect(remaining).toEqual([]);
   });
 
-  it('should remove a host and requeue its batch when sendRequest throws', async () => {
-    mockSendRequest.mockRejectedValue(new Error('connection refused'));
+  it('should remove a host and requeue its batch when evalRequest throws', async () => {
+    mockEvalRequest.mockRejectedValue(new Error('connection refused'));
 
     const [lastTestId, remaining] = await sprayTests([TEST_1, TEST_2], { [HOST_A]: 5 });
 
@@ -85,7 +85,7 @@ describe('sprayTests', () => {
   });
 
   it('should fall back to another host when the first host fails', async () => {
-    mockSendRequest
+    mockEvalRequest
       .mockRejectedValueOnce(new Error('timeout'))
       .mockResolvedValueOnce([TEST_1.test_id, TEST_2.test_id]);
     mockSetRunningTests.mockResolvedValue(null);
@@ -95,13 +95,13 @@ describe('sprayTests', () => {
       { [HOST_A]: 5, [HOST_B]: 5 },
     );
 
-    expect(mockSendRequest).toHaveBeenCalledTimes(2);
+    expect(mockEvalRequest).toHaveBeenCalledTimes(2);
     expect(lastTestId).toBe(TEST_2.test_id);
     expect(remaining).toEqual([]);
   });
 
   it('should skip a host with 0 available slots', async () => {
-    mockSendRequest.mockResolvedValue([TEST_1.test_id]);
+    mockEvalRequest.mockResolvedValue([TEST_1.test_id]);
     mockSetRunningTests.mockResolvedValue(null);
 
     const [lastTestId, remaining] = await sprayTests(
@@ -110,14 +110,14 @@ describe('sprayTests', () => {
     );
 
     // HOST_A has 0 slots so it should be skipped; HOST_B should handle the test
-    expect(mockSendRequest).toHaveBeenCalledWith(HOST_B, [TEST_1]);
+    expect(mockEvalRequest).toHaveBeenCalledWith(HOST_B, [TEST_1]);
     expect(lastTestId).toBe(TEST_1.test_id);
     expect(remaining).toEqual([]);
   });
 
-  it('should call setRunningTests with the started IDs returned by sendRequest', async () => {
+  it('should call setRunningTests with the started IDs returned by evalRequest', async () => {
     const startedIds = ['id-a', 'id-b'];
-    mockSendRequest.mockResolvedValue(startedIds);
+    mockEvalRequest.mockResolvedValue(startedIds);
     mockSetRunningTests.mockResolvedValue(null);
 
     await sprayTests([TEST_1, TEST_2], { [HOST_A]: 5 });
@@ -126,7 +126,7 @@ describe('sprayTests', () => {
   });
 
   it('should return remaining tests when all hosts fail', async () => {
-    mockSendRequest.mockRejectedValue(new Error('all down'));
+    mockEvalRequest.mockRejectedValue(new Error('all down'));
 
     const [lastTestId, remaining] = await sprayTests(
       [TEST_1, TEST_2, TEST_3],
@@ -138,7 +138,7 @@ describe('sprayTests', () => {
   });
 
   it('should handle a single test correctly', async () => {
-    mockSendRequest.mockResolvedValue([TEST_1.test_id]);
+    mockEvalRequest.mockResolvedValue([TEST_1.test_id]);
     mockSetRunningTests.mockResolvedValue(null);
 
     const [lastTestId, remaining] = await sprayTests([TEST_1], { [HOST_A]: 10 });

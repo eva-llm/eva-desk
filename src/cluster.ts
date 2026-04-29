@@ -1,6 +1,6 @@
 import { splitAndSortSlots } from './helpers';
 import { setRunningTests } from './redis';
-import { sendRequest } from './request';
+import { evalRequest } from './request';
 import { type TTestSchema } from './types';
 
 
@@ -31,7 +31,7 @@ export const sprayTests = async (
     const testsBatch = queue.splice(0, size);
 
     try {
-      const startedIds = await sendRequest(host, testsBatch); // NOTE: one-by-one - eva-run is extra fast "fire & forget"
+      const startedIds = await evalRequest(host, testsBatch); // NOTE: one-by-one - eva-run is extra fast "fire & forget"
 
       await setRunningTests(host, startedIds); // NOTE: maybe need more logic in order to avoid duplications on error here
 

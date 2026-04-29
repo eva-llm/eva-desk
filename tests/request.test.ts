@@ -4,7 +4,7 @@ jest.mock('undici', () => ({
   request: mockRequest,
 }));
 
-import { sendRequest } from '../src/request';
+import { evalRequest } from '../src/request';
 import type { TTestSchema } from '../src/types';
 
 const MOCK_HOST = 'http://localhost:3000';
@@ -21,7 +21,7 @@ const makeBodyMock = (data: unknown, text = 'error') => ({
   text: jest.fn().mockResolvedValue(text),
 });
 
-describe('sendRequest', () => {
+describe('evalRequest', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -37,7 +37,7 @@ describe('sendRequest', () => {
       body: makeBodyMock({ test_ids: testIds }),
     });
 
-    const result = await sendRequest(MOCK_HOST, [mockTest]);
+    const result = await evalRequest(MOCK_HOST, [mockTest]);
 
     expect(mockRequest).toHaveBeenCalledTimes(1);
     expect(mockRequest).toHaveBeenCalledWith(
@@ -57,7 +57,7 @@ describe('sendRequest', () => {
       body: makeBodyMock(null, 'Internal Server Error'),
     });
 
-    await expect(sendRequest(MOCK_HOST, [mockTest])).rejects.toThrow(
+    await expect(evalRequest(MOCK_HOST, [mockTest])).rejects.toThrow(
       'Server responded with 500: Internal Server Error',
     );
   });
@@ -68,7 +68,7 @@ describe('sendRequest', () => {
       body: makeBodyMock(null, 'Bad Request'),
     });
 
-    await expect(sendRequest(MOCK_HOST, [mockTest])).rejects.toThrow(
+    await expect(evalRequest(MOCK_HOST, [mockTest])).rejects.toThrow(
       'Server responded with 400: Bad Request',
     );
   });
@@ -79,7 +79,7 @@ describe('sendRequest', () => {
       body: makeBodyMock({ test_ids: [] }),
     });
 
-    const result = await sendRequest(MOCK_HOST, []);
+    const result = await evalRequest(MOCK_HOST, []);
 
     expect(mockRequest).toHaveBeenCalledWith(
       `${MOCK_HOST}/eval`,
@@ -91,6 +91,6 @@ describe('sendRequest', () => {
   it('should propagate network errors from undici', async () => {
     mockRequest.mockRejectedValue(new Error('ECONNREFUSED'));
 
-    await expect(sendRequest(MOCK_HOST, [mockTest])).rejects.toThrow('ECONNREFUSED');
+    await expect(evalRequest(MOCK_HOST, [mockTest])).rejects.toThrow('ECONNREFUSED');
   });
 });
