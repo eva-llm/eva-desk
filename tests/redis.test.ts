@@ -50,7 +50,7 @@ const TEST_ID_2 = 'test-id-2';
 
 beforeEach(() => {
   jest.clearAllMocks();
-  CONF.nodes = [];
+  CONF.nodes = {};
   mockPipeline.scard.mockReturnThis();
   mockPipeline.srem.mockReturnThis();
 });
@@ -66,7 +66,7 @@ describe('getStuckTests', () => {
   it('returns test IDs for nodes not in CONF.nodes', async () => {
     mockRedis.scan.mockResolvedValue([NODE_1, NODE_2]);
     mockRedis.smembers.mockResolvedValueOnce([TEST_ID_1]).mockResolvedValueOnce([TEST_ID_2]);
-    CONF.nodes = [];
+    CONF.nodes = {};
 
     const result = await getStuckTests();
 
@@ -78,7 +78,7 @@ describe('getStuckTests', () => {
   it('skips nodes that are still active in CONF.nodes', async () => {
     mockRedis.scan.mockResolvedValue([NODE_1, NODE_2]);
     mockRedis.smembers.mockResolvedValue([TEST_ID_1]);
-    CONF.nodes = [NODE_1, NODE_2];
+    CONF.nodes = { [NODE_1]: 'http://node-a:3000', [NODE_2]: 'http://node-b:3000' };
 
     const result = await getStuckTests();
 
@@ -89,7 +89,7 @@ describe('getStuckTests', () => {
   it('only fetches tests for dead nodes, not live ones', async () => {
     mockRedis.scan.mockResolvedValue([NODE_1, NODE_2]);
     mockRedis.smembers.mockResolvedValue([TEST_ID_1]);
-    CONF.nodes = [NODE_1];
+    CONF.nodes = { [NODE_1]: 'http://node-a:3000' };
 
     const result = await getStuckTests();
 
@@ -103,7 +103,7 @@ describe('getStuckTests', () => {
     mockRedis.smembers
       .mockResolvedValueOnce([TEST_ID_1])
       .mockResolvedValueOnce([TEST_ID_2]);
-    CONF.nodes = [];
+    CONF.nodes = {};
 
     const result = await getStuckTests();
 
@@ -115,7 +115,7 @@ describe('getStuckTests', () => {
 
 describe('getNodesLoad', () => {
   it('returns empty object when CONF.nodes is empty', async () => {
-    CONF.nodes = [];
+    CONF.nodes = {};
     mockPipeline.exec.mockResolvedValue([]);
 
     const result = await getNodesLoad();
@@ -125,7 +125,7 @@ describe('getNodesLoad', () => {
   });
 
   it('returns empty object when pipeline.exec returns null', async () => {
-    CONF.nodes = [NODE_1];
+    CONF.nodes = { [NODE_1]: 'http://node-a:3000' };
     mockPipeline.exec.mockResolvedValue(null);
 
     const result = await getNodesLoad();
@@ -134,7 +134,7 @@ describe('getNodesLoad', () => {
   });
 
   it('maps node IDs to their running test counts', async () => {
-    CONF.nodes = [NODE_1, NODE_2];
+    CONF.nodes = { [NODE_1]: 'http://node-a:3000', [NODE_2]: 'http://node-b:3000' };
     mockPipeline.exec.mockResolvedValue([
       [null, 3],
       [null, 7],
@@ -142,13 +142,13 @@ describe('getNodesLoad', () => {
 
     const result = await getNodesLoad();
 
-    expect(result).toEqual({ [NODE_1]: 3, [NODE_2]: 7 });
+    expect(result).toEqual({ 'http://node-a:3000': 3, 'http://node-b:3000': 7 });
     expect(mockPipeline.scard).toHaveBeenCalledWith(`${QUEUE_TEST_RUNNING}:${NODE_1}`);
     expect(mockPipeline.scard).toHaveBeenCalledWith(`${QUEUE_TEST_RUNNING}:${NODE_2}`);
   });
 
   it('skips nodes that returned an error from the pipeline', async () => {
-    CONF.nodes = [NODE_1, NODE_2];
+    CONF.nodes = { [NODE_1]: 'http://node-a:3000', [NODE_2]: 'http://node-b:3000' };
     mockPipeline.exec.mockResolvedValue([
       [new Error('redis error'), 0],
       [null, 5],
@@ -156,8 +156,8 @@ describe('getNodesLoad', () => {
 
     const result = await getNodesLoad();
 
-    expect(result).toEqual({ [NODE_2]: 5 });
-    expect(result[NODE_1]).toBeUndefined();
+    expect(result).toEqual({ 'http://node-b:3000': 5 });
+    expect(result['http://node-a:3000']).toBeUndefined();
   });
 });
 

@@ -48,7 +48,7 @@ export default (fastify: FastifyInstance) => {
         throw createError(400, 'Cluster is busy');
       }
 
-      if (CONF.nodes.length === 0) {
+      if (Object.keys(CONF.nodes).length === 0) {
         throw createError(400, 'No nodes to run tests');
       }
 

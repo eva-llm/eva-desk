@@ -1,6 +1,7 @@
 import { sprayTests } from './cluster';
 import { getNodesLoad } from './redis';
 import {
+  forever,
   getSlots,
   sleep,
   switchRunId,
@@ -9,25 +10,25 @@ import CONF from './config';
 import { getNextTests } from './db';
 
 
-export default async () => {
-  while (true) {
+export default () => {
+  forever(async () => {
     await sleep(CONF.tickInterval);
 
     if (!CONF.currentRunId) {
-      continue;
+      return;
     }
 
     const nodesLoad = await getNodesLoad();
 
     if (Object.keys(nodesLoad).length === 0) {
-      continue;
+      return;
     }
 
     const slots = getSlots(nodesLoad);
     const size = Object.values(slots).reduce((sum, el) => sum + el, 0);
 
     if (size < CONF.maxNodeLoad / 2) {
-      continue; // NOTE: don't deal with trifles
+      return; // NOTE: don't deal with trifles
     }
 
     const tests = await getNextTests(size);
@@ -39,5 +40,5 @@ export default async () => {
     } else {
       CONF.lastTestId = lastTestId;
     }
-  };
+  });
 }

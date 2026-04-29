@@ -42,3 +42,13 @@ export const configs2tests = (testConfigs: ITestRun[]): TTestSchema[] => {
 
   return tests;
 };
+
+export const forever = async (func: () => Promise<void>) => {
+  await func();
+  while (true) {
+    await sleep(CONF.tickInterval); // NOTE: keep interval value internally
+    try {
+      await func();
+    } catch {}
+  }
+}

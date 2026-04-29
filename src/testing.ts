@@ -3,14 +3,17 @@ import {
   markTestsDone,
 } from './redis';
 
-export default async () => {
-  while (true) {
-    const doneTests = await getDoneTests();
 
-    if (!doneTests) {
-      continue;
+export default () => {
+  (async () => {
+    while (true) {
+      const doneTests = await getDoneTests();
+
+      if (!doneTests) {
+        continue;
+      }
+
+      await markTestsDone(doneTests);
     }
-
-    await markTestsDone(doneTests);
-  }
+  })();
 }

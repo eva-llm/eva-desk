@@ -102,7 +102,7 @@ export const RunsQueueResponse = Type.Object({
 export type TRunsQueueResponse = Static<typeof RunsQueueResponse>;
 
 export const NodesResponse = Type.Object({
-  nodes: Type.Array(Type.String()),
+  nodes: Type.Record(Type.String(), Type.String()),
 });
 export type TNodesResponse = Static<typeof NodesResponse>;
 
