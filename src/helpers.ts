@@ -1,4 +1,8 @@
 // NOTE: helpers use config, utils don't, to avoid circular dependencies
+import {
+  type ITestRun,
+  type TTestSchema,
+} from './types';
 import CONF from './config';
 
 export const getSlots = (
@@ -23,3 +27,18 @@ export const switchRunId = () => {
 }
 
 export const sleep = (sec: number) => new Promise((resolve) => setTimeout(resolve, sec * 1000));
+
+export const configs2tests = (testConfigs: ITestRun[]): TTestSchema[] => {
+  const tests: TTestSchema[] = [];
+
+  for (const testConfig of testConfigs) {
+    const test = JSON.parse(testConfig.test_config) as TTestSchema;
+
+    test.test_id = testConfig.test_id;
+    test.run_id = testConfig.run_id;
+
+    tests.push(test)
+  }
+
+  return tests;
+};

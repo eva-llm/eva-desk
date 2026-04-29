@@ -5,8 +5,8 @@ import {
   type ITestRun,
 } from './types';
 import CONF from './config';
-
-const UUID_MIN = '00000000-0000-0000-0000-000000000000';
+import { configs2tests } from './helpers';
+import { UUID_MIN } from './constants';
 
 const sql = postgres(process.env.DATABASE_URL!, {
   max: 10, 
@@ -34,18 +34,7 @@ export const getNextTests = async (size: number): Promise<TTestSchema[]> => {
     return [];
   }
 
-  const tests: TTestSchema[] = [];
-
-  for (const testConfig of testConfigs) {
-    const test = JSON.parse(testConfig.test_config) as TTestSchema;
-
-    test.test_id = testConfig.test_id;
-    test.run_id = testConfig.run_id;
-
-    tests.push(test)
-  }
-
-  return tests;
+  return configs2tests(testConfigs);
 }
 
 export const getTestsByIds = async (testIds: string[]): Promise<TTestSchema[]> => {
@@ -61,16 +50,5 @@ export const getTestsByIds = async (testIds: string[]): Promise<TTestSchema[]> =
     return [];
   }
 
-  const tests: TTestSchema[] = [];
-
-  for (const testConfig of testConfigs) {
-    const test = JSON.parse(testConfig.test_config) as TTestSchema;
-
-    test.test_id = testConfig.test_id;
-    test.run_id = testConfig.run_id;
-
-    tests.push(test)
-  }
-
-  return tests;
+  return configs2tests(testConfigs);
 }
