@@ -5,6 +5,7 @@ module.exports = {
     '^.+\\.tsx?$': ['ts-jest', {
       tsconfig: {
         allowSyntheticDefaultImports: true,
+        esModuleInterop: true,
       },
     }],
   },
