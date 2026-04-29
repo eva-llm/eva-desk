@@ -7,20 +7,21 @@ import { getTestsByIds } from './db';
 import {
   getSlots,
   sleep,
+  forever,
 } from './helpers';
 import { sprayTests } from './cluster';
 import { type TTestSchema } from 'types';
 
-export default async () => {
+export default () => {
   let stuckTests: TTestSchema[] = []; // NOTE: maybe better to keep in redis
 
-  while (true) {
+  forever(async () => {
     await sleep(CONF.tickInterval)
 
     const nodesLoad = await getNodesLoad();
     
     if (Object.keys(nodesLoad).length === 0) {
-      continue;
+      return;
     }
 
     const slots = getSlots(nodesLoad);
@@ -29,12 +30,12 @@ export default async () => {
       const stuckTestIds = await getStuckTests();
 
       if (stuckTestIds.length === 0) {
-        continue;
+        return;
       }
 
       stuckTests = await getTestsByIds(stuckTestIds);
     }
 
     [, stuckTests] = await sprayTests(stuckTests, slots);
-  };
+  });
 };

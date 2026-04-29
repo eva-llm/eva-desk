@@ -16,7 +16,7 @@ export default redis;
 export const getStuckTests = async (): Promise<string[]> => {
   const registedNodeIds = new Set(await redis.scan(0, 'MATCH', `${QUEUE_TEST_RUNNING}:*`));
 
-  const diedNodeIds = registedNodeIds.difference(new Set(CONF.nodes));
+  const diedNodeIds = registedNodeIds.difference(new Set(Object.keys(CONF.nodes)));
 
   const testIds: string[] = [];
 
@@ -33,8 +33,8 @@ export const getNodesLoad = async (): Promise<Record<string, number>> => {
   const nodesLoad: Record<string, number> = {};
   const pipeline = redis.pipeline();
 
-  for (const nodeId of CONF.nodes) {
-    pipeline.scard(`${QUEUE_TEST_RUNNING}:${nodeId}`);
+  for (const uuid of Object.keys(CONF.nodes)) {
+    pipeline.scard(`${QUEUE_TEST_RUNNING}:${uuid}`);
   }
 
   const results = await pipeline.exec();
@@ -43,11 +43,11 @@ export const getNodesLoad = async (): Promise<Record<string, number>> => {
     return nodesLoad;
   }
 
-  CONF.nodes.forEach((nodeId, index) => {
+  Object.values(CONF.nodes).forEach((host, index) => {
     const [ error, count ] = results[index];
 
     if (!error) { // NOTE: Don't log now, but skip the node with error
-      nodesLoad[nodeId] = count as number;
+      nodesLoad[host] = count as number;
     }
   });
 
@@ -91,13 +91,13 @@ export const getDoneTests = async (): Promise<Record<string, string[]> | null> =
   const doneTests: Record<string, string[]> = {};
 
   for (const testInfo of testsInfo) {
-    const [host, testId] = testInfo.split('|') as [string, string];
+    const [uuid, testId] = testInfo.split('|') as [string, string];
 
-    if (!doneTests[host]) {
-      doneTests[host] = [];
+    if (!doneTests[uuid]) {
+      doneTests[uuid] = [];
     }
 
-    doneTests[host].push(testId);
+    doneTests[uuid].push(testId);
   }
 
   return doneTests;

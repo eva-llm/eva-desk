@@ -1,5 +1,5 @@
 import CONF from '../src/config';
-import { getSlots, splitAndSortSlots, switchRunId, sleep } from '../src/helpers';
+import { getSlots, splitAndSortSlots, switchRunId, sleep, forever } from '../src/helpers';
 
 describe('getSlots', () => {
   beforeEach(() => {
@@ -91,5 +91,58 @@ describe('sleep', () => {
     sleep(5).then(() => { resolved = true; });
     jest.advanceTimersByTime(4999);
     expect(resolved).toBe(false);
+  });
+});
+
+describe('forever', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    CONF.tickInterval = 5;
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('should call func immediately on start', async () => {
+    const func = jest.fn().mockResolvedValue(undefined);
+    forever(func);
+    await Promise.resolve();
+    expect(func).toHaveBeenCalledTimes(1);
+  });
+
+  it('should call func again after each tick interval', async () => {
+    const func = jest.fn().mockResolvedValue(undefined);
+    forever(func);
+    await Promise.resolve();
+    expect(func).toHaveBeenCalledTimes(1);
+
+    await jest.advanceTimersByTimeAsync(CONF.tickInterval * 1000);
+    expect(func).toHaveBeenCalledTimes(2);
+
+    await jest.advanceTimersByTimeAsync(CONF.tickInterval * 1000);
+    expect(func).toHaveBeenCalledTimes(3);
+  });
+
+  it('should swallow errors thrown in the loop body', async () => {
+    let callCount = 0;
+    const func = jest.fn().mockImplementation(async () => {
+      if (++callCount > 1) throw new Error('loop error');
+    });
+
+    forever(func);
+    await Promise.resolve();
+    expect(func).toHaveBeenCalledTimes(1);
+
+    await jest.advanceTimersByTimeAsync(CONF.tickInterval * 1000);
+    expect(func).toHaveBeenCalledTimes(2);
+
+    await jest.advanceTimersByTimeAsync(CONF.tickInterval * 1000);
+    expect(func).toHaveBeenCalledTimes(3);
+  });
+
+  it('should propagate an error thrown by the first call', async () => {
+    const func = jest.fn().mockRejectedValue(new Error('initial error'));
+    await expect(forever(func)).rejects.toThrow('initial error');
   });
 });

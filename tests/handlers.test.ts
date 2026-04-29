@@ -31,7 +31,7 @@ beforeEach(async () => {
   jest.clearAllMocks();
 
   CONF.currentRunId = null;
-  CONF.nodes = [];
+  CONF.nodes = {};
   CONF.runIdsQueue = [];
 
   app = Fastify();
@@ -48,7 +48,7 @@ afterEach(async () => {
 describe('POST /eval', () => {
   it('returns 400 when cluster is busy (currentRunId is set)', async () => {
     CONF.currentRunId = RUN_ID;
-    CONF.nodes = ['http://node-a:3000'];
+    CONF.nodes = { 'key-1': 'http://node-a:3000' };
 
     const res = await app.inject({
       method: 'POST',
@@ -62,7 +62,7 @@ describe('POST /eval', () => {
 
   it('returns 400 when there are no nodes', async () => {
     CONF.currentRunId = null;
-    CONF.nodes = [];
+    CONF.nodes = {};
 
     const res = await app.inject({
       method: 'POST',
@@ -75,7 +75,7 @@ describe('POST /eval', () => {
   });
 
   it('assigns a test_id to each test via uuidv7 and returns them', async () => {
-    CONF.nodes = ['http://node-a:3000'];
+    CONF.nodes = { 'key-1': 'http://node-a:3000' };
     mockUuidv7.mockReturnValueOnce(TEST_ID_1).mockReturnValueOnce(TEST_ID_2);
     mockGetNodesLoad.mockResolvedValue({ 'http://node-a:3000': 0 });
     mockGetSlots.mockReturnValue({ 'http://node-a:3000': 10 });
@@ -95,7 +95,7 @@ describe('POST /eval', () => {
   });
 
   it('calls sprayTests with test configs (including injected test_id) and slots', async () => {
-    CONF.nodes = ['http://node-a:3000'];
+    CONF.nodes = { 'key-1': 'http://node-a:3000' };
     mockUuidv7.mockReturnValueOnce(TEST_ID_1);
     const nodesLoad = { 'http://node-a:3000': 5 };
     const slots = { 'http://node-a:3000': 5 };
@@ -120,7 +120,7 @@ describe('POST /eval', () => {
   });
 
   it('does not await sprayTests (fire-and-forget)', async () => {
-    CONF.nodes = ['http://node-a:3000'];
+    CONF.nodes = { 'key-1': 'http://node-a:3000' };
     mockUuidv7.mockReturnValueOnce(TEST_ID_1);
     mockGetNodesLoad.mockResolvedValue({});
     mockGetSlots.mockReturnValue({});
@@ -249,22 +249,22 @@ describe('GET /runs_queue', () => {
 
 describe('GET /nodes', () => {
   it('returns an empty array when no nodes are registered', async () => {
-    CONF.nodes = [];
+    CONF.nodes = {};
 
     const res = await app.inject({ method: 'GET', url: '/nodes' });
 
     expect(res.statusCode).toBe(200);
-    expect(JSON.parse(res.body)).toEqual({ nodes: [] });
+    expect(JSON.parse(res.body)).toEqual({ nodes: {} });
   });
 
   it('returns the registered nodes', async () => {
-    CONF.nodes = ['http://node-a:3000', 'http://node-b:3000'];
+    CONF.nodes = { 'key-1': 'http://node-a:3000', 'key-2': 'http://node-b:3000' };
 
     const res = await app.inject({ method: 'GET', url: '/nodes' });
 
     expect(res.statusCode).toBe(200);
     expect(JSON.parse(res.body)).toEqual({
-      nodes: ['http://node-a:3000', 'http://node-b:3000'],
+      nodes: { 'key-1': 'http://node-a:3000', 'key-2': 'http://node-b:3000' },
     });
   });
 });

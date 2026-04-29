@@ -4,6 +4,7 @@ const mockGetNextTests = jest.fn();
 const mockGetSlots = jest.fn();
 const mockSwitchRunId = jest.fn();
 const mockSleep = jest.fn();
+const mockForever = jest.fn();
 
 jest.mock('../src/cluster', () => ({
   sprayTests: mockSprayTests,
@@ -21,6 +22,7 @@ jest.mock('../src/helpers', () => ({
   getSlots: mockGetSlots,
   switchRunId: mockSwitchRunId,
   sleep: mockSleep,
+  forever: mockForever,
 }));
 
 import CONF from '../src/config';
@@ -33,14 +35,16 @@ describe('exec module', () => {
     CONF.currentRunId = 'run-1';
     CONF.lastTestId = null;
     CONF.maxNodeLoad = 100;
+    mockForever.mockImplementation(async (func: () => Promise<void>) => {
+      await func();
+    });
   });
 
   it('should skip iteration when currentRunId is not set', async () => {
     CONF.currentRunId = null;
 
-    mockSleep.mockRejectedValueOnce(new Error('stop'));
-
-    await expect(runExec()).rejects.toThrow('stop');
+    runExec();
+    await mockForever.mock.results[0].value;
 
     expect(mockGetNodesLoad).not.toHaveBeenCalled();
     expect(mockGetNextTests).not.toHaveBeenCalled();
@@ -48,11 +52,10 @@ describe('exec module', () => {
   });
 
   it('should skip iteration when nodesLoad is empty', async () => {
-    mockGetNodesLoad
-      .mockResolvedValueOnce({})
-      .mockRejectedValueOnce(new Error('stop'));
+    mockGetNodesLoad.mockResolvedValue({});
 
-    await expect(runExec()).rejects.toThrow('stop');
+    runExec();
+    await mockForever.mock.results[0].value;
 
     expect(mockGetSlots).not.toHaveBeenCalled();
     expect(mockGetNextTests).not.toHaveBeenCalled();
@@ -62,12 +65,11 @@ describe('exec module', () => {
   it('should skip iteration when total slots are below half of maxNodeLoad', async () => {
     const nodesLoad = { 'node-1': 95, 'node-2': 98 };
     // slots sum = 5 + 2 = 7, maxNodeLoad = 100, threshold = 50
-    mockGetNodesLoad
-      .mockResolvedValueOnce(nodesLoad)
-      .mockRejectedValueOnce(new Error('stop'));
+    mockGetNodesLoad.mockResolvedValue(nodesLoad);
     mockGetSlots.mockReturnValue({ 'node-1': 5, 'node-2': 2 });
 
-    await expect(runExec()).rejects.toThrow('stop');
+    runExec();
+    await mockForever.mock.results[0].value;
 
     expect(mockGetSlots).toHaveBeenCalledWith(nodesLoad);
     expect(mockGetNextTests).not.toHaveBeenCalled();
@@ -79,14 +81,13 @@ describe('exec module', () => {
     const slots = { 'node-1': 50 };
     const tests = [{ test_id: 'test-1' }, { test_id: 'test-2' }];
 
-    mockGetNodesLoad
-      .mockResolvedValueOnce(nodesLoad)
-      .mockRejectedValueOnce(new Error('stop'));
+    mockGetNodesLoad.mockResolvedValue(nodesLoad);
     mockGetSlots.mockReturnValue(slots);
     mockGetNextTests.mockResolvedValue(tests);
     mockSprayTests.mockResolvedValue(['test-2', []]);
 
-    await expect(runExec()).rejects.toThrow('stop');
+    runExec();
+    await mockForever.mock.results[0].value;
 
     expect(mockGetNextTests).toHaveBeenCalledWith(50);
     expect(mockSprayTests).toHaveBeenCalledWith(tests, slots);
@@ -98,14 +99,13 @@ describe('exec module', () => {
     // tests.length (2) < size (100) and notRunTests is empty
     const tests = [{ test_id: 'test-1' }, { test_id: 'test-2' }];
 
-    mockGetNodesLoad
-      .mockResolvedValueOnce(nodesLoad)
-      .mockRejectedValueOnce(new Error('stop'));
+    mockGetNodesLoad.mockResolvedValue(nodesLoad);
     mockGetSlots.mockReturnValue(slots);
     mockGetNextTests.mockResolvedValue(tests);
     mockSprayTests.mockResolvedValue(['test-2', []]);
 
-    await expect(runExec()).rejects.toThrow('stop');
+    runExec();
+    await mockForever.mock.results[0].value;
 
     expect(mockSwitchRunId).toHaveBeenCalledTimes(1);
     expect(CONF.lastTestId).toBeNull();
@@ -117,14 +117,13 @@ describe('exec module', () => {
     const tests = [{ test_id: 'test-1' }, { test_id: 'test-2' }];
     const notRunTests = [{ test_id: 'test-2' }];
 
-    mockGetNodesLoad
-      .mockResolvedValueOnce(nodesLoad)
-      .mockRejectedValueOnce(new Error('stop'));
+    mockGetNodesLoad.mockResolvedValue(nodesLoad);
     mockGetSlots.mockReturnValue(slots);
     mockGetNextTests.mockResolvedValue(tests);
     mockSprayTests.mockResolvedValue(['test-1', notRunTests]);
 
-    await expect(runExec()).rejects.toThrow('stop');
+    runExec();
+    await mockForever.mock.results[0].value;
 
     expect(mockSwitchRunId).not.toHaveBeenCalled();
     expect(CONF.lastTestId).toBe('test-1');
@@ -134,30 +133,33 @@ describe('exec module', () => {
     const nodesLoad = { 'node-1': 0 };
     const slots = { 'node-1': 2 };
     // tests.length (2) === size (2), condition false → update lastTestId
+    // maxNodeLoad=4 so threshold=2 and size=2 passes the guard
     const tests = [{ test_id: 'test-1' }, { test_id: 'test-2' }];
+    CONF.maxNodeLoad = 4;
 
-    mockGetNodesLoad
-      .mockResolvedValueOnce(nodesLoad)
-      .mockRejectedValueOnce(new Error('stop'));
+    mockGetNodesLoad.mockResolvedValue(nodesLoad);
     mockGetSlots.mockReturnValue(slots);
     mockGetNextTests.mockResolvedValue(tests);
     mockSprayTests.mockResolvedValue(['test-2', []]);
 
-    await expect(runExec()).rejects.toThrow('stop');
+    runExec();
+    await mockForever.mock.results[0].value;
 
     expect(mockSwitchRunId).not.toHaveBeenCalled();
-    expect(CONF.lastTestId).toBe(null);
+    expect(CONF.lastTestId).toBe('test-2');
   });
 
   it('should call sleep on every tick', async () => {
     CONF.currentRunId = null;
 
-    mockSleep
-      .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce(undefined)
-      .mockRejectedValueOnce(new Error('stop'));
+    mockForever.mockImplementation(async (func: () => Promise<void>) => {
+      await func();
+      await func();
+      await func();
+    });
 
-    await expect(runExec()).rejects.toThrow('stop');
+    runExec();
+    await mockForever.mock.results[0].value;
 
     expect(mockSleep).toHaveBeenCalledTimes(3);
     expect(mockSleep).toHaveBeenCalledWith(CONF.tickInterval);

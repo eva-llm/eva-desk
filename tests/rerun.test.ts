@@ -4,6 +4,7 @@ const mockGetTestsByIds = jest.fn();
 const mockGetSlots = jest.fn();
 const mockSprayTests = jest.fn();
 const mockSleep = jest.fn();
+const mockForever = jest.fn();
 
 jest.mock('../src/redis', () => ({
   getNodesLoad: mockGetNodesLoad,
@@ -17,6 +18,7 @@ jest.mock('../src/db', () => ({
 jest.mock('../src/helpers', () => ({
   getSlots: mockGetSlots,
   sleep: mockSleep,
+  forever: mockForever,
 }));
 
 jest.mock('../src/cluster', () => ({
@@ -29,14 +31,16 @@ describe('rerun module', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockSleep.mockResolvedValue(undefined);
+    mockForever.mockImplementation(async (func: () => Promise<void>) => {
+      await func();
+    });
   });
 
   it('should skip iteration when nodesLoad is empty', async () => {
-    mockGetNodesLoad
-      .mockResolvedValueOnce({})
-      .mockRejectedValueOnce(new Error('stop'));
+    mockGetNodesLoad.mockResolvedValue({});
 
-    await expect(runRerun()).rejects.toThrow('stop');
+    runRerun();
+    await mockForever.mock.results[0].value;
 
     expect(mockGetStuckTests).not.toHaveBeenCalled();
     expect(mockSprayTests).not.toHaveBeenCalled();
@@ -46,13 +50,12 @@ describe('rerun module', () => {
     const nodesLoad = { 'node-1': 2 };
     const slots = { 'node-1': 8 };
 
-    mockGetNodesLoad
-      .mockResolvedValueOnce(nodesLoad)
-      .mockRejectedValueOnce(new Error('stop'));
+    mockGetNodesLoad.mockResolvedValue(nodesLoad);
     mockGetSlots.mockReturnValue(slots);
     mockGetStuckTests.mockResolvedValue([]);
 
-    await expect(runRerun()).rejects.toThrow('stop');
+    runRerun();
+    await mockForever.mock.results[0].value;
 
     expect(mockGetStuckTests).toHaveBeenCalledTimes(1);
     expect(mockGetTestsByIds).not.toHaveBeenCalled();
@@ -65,15 +68,14 @@ describe('rerun module', () => {
     const stuckTestIds = ['test-1', 'test-2'];
     const stuckTests = [{ test_id: 'test-1' }, { test_id: 'test-2' }];
 
-    mockGetNodesLoad
-      .mockResolvedValueOnce(nodesLoad)
-      .mockRejectedValueOnce(new Error('stop'));
+    mockGetNodesLoad.mockResolvedValue(nodesLoad);
     mockGetSlots.mockReturnValue(slots);
     mockGetStuckTests.mockResolvedValue(stuckTestIds);
     mockGetTestsByIds.mockResolvedValue(stuckTests);
     mockSprayTests.mockResolvedValue([null, []]);
 
-    await expect(runRerun()).rejects.toThrow('stop');
+    runRerun();
+    await mockForever.mock.results[0].value;
 
     expect(mockGetTestsByIds).toHaveBeenCalledWith(stuckTestIds);
     expect(mockSprayTests).toHaveBeenCalledWith(stuckTests, slots);
@@ -86,10 +88,7 @@ describe('rerun module', () => {
     const stuckTests = [{ test_id: 'test-1' }, { test_id: 'test-2' }];
     const remaining = [{ test_id: 'test-2' }];
 
-    mockGetNodesLoad
-      .mockResolvedValueOnce(nodesLoad)
-      .mockResolvedValueOnce(nodesLoad)
-      .mockRejectedValueOnce(new Error('stop'));
+    mockGetNodesLoad.mockResolvedValue(nodesLoad);
     mockGetSlots.mockReturnValue(slots);
     mockGetStuckTests.mockResolvedValue(stuckTestIds);
     mockGetTestsByIds.mockResolvedValue(stuckTests);
@@ -97,7 +96,13 @@ describe('rerun module', () => {
       .mockResolvedValueOnce([null, remaining])
       .mockResolvedValueOnce([null, []]);
 
-    await expect(runRerun()).rejects.toThrow('stop');
+    mockForever.mockImplementation(async (func: () => Promise<void>) => {
+      await func();
+      await func();
+    });
+
+    runRerun();
+    await mockForever.mock.results[0].value;
 
     // getStuckTests and getTestsByIds should only be called once
     expect(mockGetStuckTests).toHaveBeenCalledTimes(1);
@@ -108,12 +113,16 @@ describe('rerun module', () => {
   });
 
   it('should call sleep on every tick', async () => {
-    mockGetNodesLoad
-      .mockResolvedValueOnce({})
-      .mockResolvedValueOnce({})
-      .mockRejectedValueOnce(new Error('stop'));
+    mockGetNodesLoad.mockResolvedValue({});
 
-    await expect(runRerun()).rejects.toThrow('stop');
+    mockForever.mockImplementation(async (func: () => Promise<void>) => {
+      await func();
+      await func();
+      await func();
+    });
+
+    runRerun();
+    await mockForever.mock.results[0].value;
 
     expect(mockSleep).toHaveBeenCalledTimes(3);
   });
@@ -124,15 +133,14 @@ describe('rerun module', () => {
     const stuckTestIds = ['test-1'];
     const stuckTests = [{ test_id: 'test-1' }];
 
-    mockGetNodesLoad
-      .mockResolvedValueOnce(nodesLoad)
-      .mockRejectedValueOnce(new Error('stop'));
+    mockGetNodesLoad.mockResolvedValue(nodesLoad);
     mockGetSlots.mockReturnValue(slots);
     mockGetStuckTests.mockResolvedValue(stuckTestIds);
     mockGetTestsByIds.mockResolvedValue(stuckTests);
     mockSprayTests.mockResolvedValue([null, []]);
 
-    await expect(runRerun()).rejects.toThrow('stop');
+    runRerun();
+    await mockForever.mock.results[0].value;
 
     expect(mockGetSlots).toHaveBeenCalledWith(nodesLoad);
     expect(mockSprayTests).toHaveBeenCalledWith(stuckTests, slots);
