@@ -1,7 +1,15 @@
-import { splitAndSortSlots } from './helpers';
-import { setRunningTests } from './redis';
-import { evalRequest } from './request';
-import { type TTestSchema } from './types';
+import {
+  splitAndSortSlots,
+} from './helpers';
+import {
+  setRunningTests,
+} from './redis';
+import {
+  evalRequest,
+} from './request';
+import {
+  type TTestSchema,
+} from './types';
 
 
 export const sprayTests = async (

@@ -6,6 +6,9 @@ import updateDoneTests from './testing';
 import assignTestsToNodes from './exec';
 import registerHandlers from './handlers';
 import reRunTestsOfDiedNodes from './rerun';
+import {
+  getRuntimeConfig,
+} from './redis';
 
 
 const fastify = Fastify({
@@ -29,6 +32,8 @@ const start = async () => {
     updateDoneTests();
     assignTestsToNodes();
     reRunTestsOfDiedNodes();
+
+    Object.assign(CONF, await getRuntimeConfig());
 
     const address = await fastify.listen({ 
       port: CONF.port,

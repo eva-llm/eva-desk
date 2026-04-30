@@ -3,14 +3,21 @@ import {
   getStuckTests,
 } from './redis';
 import CONF from './config';
-import { getTestsByIds } from './db';
+import {
+  getTestsByIds,
+} from './db';
 import {
   getSlots,
   sleep,
   forever,
 } from './helpers';
-import { sprayTests } from './cluster';
-import { type TTestSchema } from 'types';
+import {
+  sprayTests,
+} from './cluster';
+import {
+  type TTestSchema,
+} from 'types';
+
 
 export default () => {
   let stuckTests: TTestSchema[] = []; // NOTE: maybe better to keep in redis

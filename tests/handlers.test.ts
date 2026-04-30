@@ -1,11 +1,17 @@
 const mockSprayTests = jest.fn();
 const mockGetSlots = jest.fn();
 const mockGetNodesLoad = jest.fn();
+const mockUpdateCurrentRunId = jest.fn();
+const mockUpdateRunIdsQueue = jest.fn();
 const mockUuidv7 = jest.fn();
 
 jest.mock('../src/cluster', () => ({ sprayTests: mockSprayTests }));
 jest.mock('../src/helpers', () => ({ getSlots: mockGetSlots }));
-jest.mock('../src/redis', () => ({ getNodesLoad: mockGetNodesLoad }));
+jest.mock('../src/redis', () => ({
+  getNodesLoad: mockGetNodesLoad,
+  updateCurrentRunId: mockUpdateCurrentRunId,
+  updateRunIdsQueue: mockUpdateRunIdsQueue,
+}));
 jest.mock('uuidv7', () => ({ uuidv7: mockUuidv7 }));
 
 import Fastify, { type FastifyInstance } from 'fastify';

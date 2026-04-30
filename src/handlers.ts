@@ -3,13 +3,22 @@ import {
   type FastifyInstance,
   type FastifyRequest,
 } from 'fastify';
-import { uuidv7 } from 'uuidv7';
+import {
+  uuidv7,
+} from 'uuidv7';
 
 import CONF from './config';
-import { sprayTests } from './cluster';
-import { getSlots } from './helpers';
-import { getNodesLoad } from './redis';
-
+import {
+  sprayTests,
+} from './cluster';
+import {
+  getSlots,
+} from './helpers';
+import {
+  getNodesLoad,
+  updateCurrentRunId,
+  updateRunIdsQueue,
+} from './redis';
 import {
   CurrentRunResponse,
   EvalResponse,
@@ -28,6 +37,7 @@ import {
   type TRunsQueueResponse,
   type TNodesResponse,
 } from './types';
+
 
 export default (fastify: FastifyInstance) => {
   fastify.post('/eval', {
@@ -93,10 +103,12 @@ export default (fastify: FastifyInstance) => {
 
       if (CONF.currentRunId) {
         CONF.runIdsQueue.push(runId);
+        updateRunIdsQueue(CONF.runIdsQueue);
 
         return { status: 'queued', run_id: runId };
       } else {
         CONF.currentRunId = runId;
+        updateCurrentRunId(runId);
 
         return { status: 'run', run_id: runId };
       }

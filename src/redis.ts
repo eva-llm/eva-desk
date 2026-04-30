@@ -5,7 +5,9 @@ import {
   QUEUE_TEST_DONE,
   QUEUE_NODE_PING,
   QUEUE_TEST_RUNNING,
+  RUNTIME_KEY,
 } from './constants';
+
 
 const redis = new Redis(process.env.CLUSTER_REDIS_URL!, {
   retryStrategy: (times) => Math.min(times * 50, 2000),
@@ -109,4 +111,33 @@ export const cleanOldNodes = (): Promise<number> => {
 
 export const getActiveNodes = (): Promise<string[]> => {
   return redis.zrange(QUEUE_NODE_PING, 0, -1);
+}
+
+export const updateCurrentRunId = (runId: string | null): Promise<number> => {
+  if (runId === null) {
+    return redis.hdel(RUNTIME_KEY, 'currentRunId');
+  } else {
+    return redis.hset(RUNTIME_KEY, 'currentRunId', runId);
+  }
+}
+
+export const updateLastTestId = (testId: string | null): Promise<number> => {
+    if (testId === null) {
+        return redis.hdel(RUNTIME_KEY, 'lastTestId');
+    } else {
+        return redis.hset(RUNTIME_KEY, 'lastTestId', testId);
+    }
+}
+
+export const updateRunIdsQueue = (runIds: string[]): Promise<number> => {
+    return redis.hset(RUNTIME_KEY, 'runIdsQueue', JSON.stringify(runIds));
+}
+
+export const getRuntimeConfig = async () => {
+    const data = await redis.hgetall(RUNTIME_KEY);
+    return {
+        currentRunId: data.currentRunId || null,
+        lastTestId: data.lastTestId || null,
+        runIdsQueue: data.runIdsQueue ? JSON.parse(data.runIdsQueue) : []
+    };
 }

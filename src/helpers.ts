@@ -4,6 +4,12 @@ import {
   type TTestSchema,
 } from './types';
 import CONF from './config';
+import {
+  updateCurrentRunId,
+  updateLastTestId,
+  updateRunIdsQueue,
+} from './redis';
+
 
 export const getSlots = (
   nodesLoad: Record<string, number>,
@@ -24,6 +30,10 @@ export const splitAndSortSlots = (slots: Record<string, number>): [string, numbe
 export const switchRunId = () => {
   CONF.currentRunId = CONF.runIdsQueue.shift() ?? null;
   CONF.lastTestId = null;
+
+  updateCurrentRunId(CONF.currentRunId);
+  updateLastTestId(null);
+  updateRunIdsQueue(CONF.runIdsQueue);
 }
 
 export const sleep = (sec: number) => new Promise((resolve) => setTimeout(resolve, sec * 1000));

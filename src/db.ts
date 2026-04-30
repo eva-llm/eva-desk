@@ -5,8 +5,13 @@ import {
   type ITestRun,
 } from './types';
 import CONF from './config';
-import { configs2tests } from './helpers';
-import { UUID_MIN } from './constants';
+import {
+  configs2tests,
+} from './helpers';
+import {
+  UUID_MIN,
+} from './constants';
+
 
 const sql = postgres(process.env.DATABASE_URL!, {
   max: 10, 

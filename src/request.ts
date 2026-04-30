@@ -1,6 +1,10 @@
-import { request } from 'undici';
+import {
+  request,
+} from 'undici';
 
-import { type TTestSchema } from './types';
+import {
+  type TTestSchema,
+} from './types';
 
 
 export const evalRequest = async (

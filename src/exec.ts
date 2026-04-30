@@ -1,5 +1,10 @@
-import { sprayTests } from './cluster';
-import { getNodesLoad } from './redis';
+import {
+  sprayTests,
+} from './cluster';
+import {
+  getNodesLoad,
+  updateLastTestId,
+} from './redis';
 import {
   forever,
   getSlots,
@@ -7,7 +12,9 @@ import {
   switchRunId,
 } from './helpers';
 import CONF from './config';
-import { getNextTests } from './db';
+import {
+  getNextTests,
+} from './db';
 
 
 export default () => {
@@ -39,6 +46,7 @@ export default () => {
       switchRunId();
     } else {
       CONF.lastTestId = lastTestId;
+      updateLastTestId(lastTestId);
     }
   });
 }

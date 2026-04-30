@@ -1,5 +1,6 @@
 const mockSprayTests = jest.fn();
 const mockGetNodesLoad = jest.fn();
+const mockUpdateLastTestId = jest.fn();
 const mockGetNextTests = jest.fn();
 const mockGetSlots = jest.fn();
 const mockSwitchRunId = jest.fn();
@@ -12,6 +13,7 @@ jest.mock('../src/cluster', () => ({
 
 jest.mock('../src/redis', () => ({
   getNodesLoad: mockGetNodesLoad,
+  updateLastTestId: mockUpdateLastTestId,
 }));
 
 jest.mock('../src/db', () => ({

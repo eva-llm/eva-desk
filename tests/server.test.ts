@@ -16,6 +16,7 @@ const mockUpdateDoneTests = jest.fn();
 const mockAssignTestsToNodes = jest.fn();
 const mockReRunTestsOfDiedNodes = jest.fn();
 const mockRegisterHandlers = jest.fn();
+const mockGetRuntimeConfig = jest.fn();
 
 jest.mock('fastify', () => ({ __esModule: true, default: mockFastify }));
 jest.mock('../src/discovery', () => ({ __esModule: true, default: mockDiscoveryNodes }));
@@ -24,6 +25,7 @@ jest.mock('../src/exec', () => ({ __esModule: true, default: mockAssignTestsToNo
 jest.mock('../src/handlers', () => ({ __esModule: true, default: mockRegisterHandlers }));
 jest.mock('../src/rerun', () => ({ __esModule: true, default: mockReRunTestsOfDiedNodes }));
 jest.mock('../src/config', () => ({ __esModule: true, default: { port: 3000 } }));
+jest.mock('../src/redis', () => ({ getRuntimeConfig: mockGetRuntimeConfig }));
 
 const flushPromises = () => new Promise<void>((resolve) => setImmediate(resolve));
 
@@ -42,6 +44,7 @@ describe('server', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetRuntimeConfig.mockResolvedValue({});
   });
 
   describe('module initialization', () => {
