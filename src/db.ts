@@ -19,9 +19,7 @@ export const getNextTests = async (size: number): Promise<TTestSchema[]> => {
     return [];
   }
 
-  let testConfigs: ITestRun[];
-
-  testConfigs = await sql<ITestRun[]>`
+  const testConfigs = await sql<ITestRun[]>`
     SELECT *
     FROM ${sql('TestRun')}
     WHERE run_id = ${CONF.currentRunId}
@@ -38,9 +36,7 @@ export const getNextTests = async (size: number): Promise<TTestSchema[]> => {
 }
 
 export const getTestsByIds = async (testIds: string[]): Promise<TTestSchema[]> => {
-  let testConfigs: ITestRun[];
-
-  testConfigs = await sql<ITestRun[]>`
+  const testConfigs = await sql<ITestRun[]>`
     SELECT *
     FROM ${sql('TestRun')}
     WHERE test_id IN ${sql(testIds)}

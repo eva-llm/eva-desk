@@ -49,6 +49,6 @@ export const forever = async (func: () => Promise<void>) => {
     await sleep(CONF.tickInterval); // NOTE: keep interval value internally
     try {
       await func();
-    } catch {}
+    } catch {} // eslint-disable-line no-empty
   }
 }
