@@ -10,7 +10,7 @@ import {
   forever,
 } from './helpers';
 import { sprayTests } from './cluster';
-import { type TTestSchema } from 'types';
+import { type TTestSchema } from './types';
 
 export default () => {
   let stuckTests: TTestSchema[] = []; // NOTE: maybe better to keep in redis
